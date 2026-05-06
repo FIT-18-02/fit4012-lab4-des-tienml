@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# TODO_STUDENT: Hoàn thiện negative test cho wrong key / incorrect key / sai key.
-# Gợi ý: giải mã với khóa sai và chứng minh không khôi phục đúng plaintext.
 set -euo pipefail
 # Compile
 g++ -std=c++17 -Wall -Wextra -pedantic des.cpp -o des_test
