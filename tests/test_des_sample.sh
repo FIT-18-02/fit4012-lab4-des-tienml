@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# TODO_STUDENT: Hoàn thiện test cho trường hợp DES mẫu từ code gốc.
-# Gợi ý: compile chương trình, chạy, rồi đối chiếu ciphertext mẫu mong đợi.
 set -euo pipefail
 # Compile
 g++ -std=c++17 -Wall -Wextra -pedantic des.cpp -o des_test
