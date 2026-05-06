@@ -2,6 +2,7 @@
 #include <string>
 #include <bitset>
 #include <vector>
+#include <algorithm>
 using namespace std;
 
 // Helper function: Covert decimal to 4-bit binary string
@@ -138,8 +139,6 @@ public:
 
             roundKeys.push_back(roundKey);
 
-            // Optional: print key
-            cout << "Key " << i + 1 << ": " << roundKey << endl;
         }
     }
 
@@ -278,35 +277,140 @@ class DES {
         }
 };
     
-// Main function
+// Helper: split binary string into 64-bit blocks and pad last with zeros
+vector<string> split_and_pad_blocks(const string& bits) {
+    vector<string> blocks;
+    size_t i = 0;
+    while (i < bits.size()) {
+        string block = bits.substr(i, 64);
+        if (block.size() < 64) {
+            block.append(64 - block.size(), '0');
+        }
+        blocks.push_back(block);
+        i += 64;
+    }
+    if (blocks.empty()) {
+        // empty input -> one zero block
+        blocks.push_back(string(64, '0'));
+    }
+    return blocks;
+}
+
+// Reverse round keys for decryption
+vector<string> reversed_keys(const vector<string>& keys) {
+    vector<string> r = keys;
+    reverse(r.begin(), r.end());
+    return r;
+}
+
+bool is_binary_string(const string& s) {
+    for (char c : s) if (c != '0' && c != '1') return false;
+    return true;
+}
+
 int main() {
-    // Example plaintext (64 bits)
-    string plaintext = "0001001000110100010101100111100010011010101111001101111011110001";
-    
-    // Example key (64 bits)
-    string key = "0001001100110100010101110111100110011011101111001101111111110001";
-    
-    // Generate round keys
-    KeyGenerator keygen(key);
-    keygen.generateRoundKeys(); 
-    
-    vector<string> roundKeys = keygen.getRoundKeys();
-    
-    // Create DES object
-    DES des(roundKeys);
-    
-    // Encrypt
-    string ciphertext = des.encrypt(plaintext);
-    
-    cout << "Ciphertext: " << ciphertext << endl;
-    
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int mode;
+    if (!(cin >> mode)) return 0;
+
+    if (mode == 1) {
+        // DES encrypt: read plaintext (binary, possibly multi-block) and key (64-bit)
+        string plaintext, key;
+        if (!(cin >> plaintext)) return 0;
+        if (!(cin >> key)) return 0;
+        if (!is_binary_string(plaintext) || !is_binary_string(key) || key.size() != 64) return 0;
+
+        vector<string> blocks = split_and_pad_blocks(plaintext);
+        string output = "";
+        KeyGenerator kg(key);
+        kg.generateRoundKeys();
+        vector<string> roundKeys = kg.getRoundKeys();
+        for (const string& b : blocks) {
+            DES des(roundKeys);
+            output += des.encrypt(b);
+        }
+        cout << output << '\n';
+        return 0;
+
+    } else if (mode == 2) {
+        // DES decrypt: read ciphertext (binary, multi-block) and key (64-bit)
+        string ciphertext, key;
+        if (!(cin >> ciphertext)) return 0;
+        if (!(cin >> key)) return 0;
+        if (!is_binary_string(ciphertext) || !is_binary_string(key) || key.size() != 64) return 0;
+
+        vector<string> blocks;
+        for (size_t i = 0; i < ciphertext.size(); i += 64) {
+            blocks.push_back(ciphertext.substr(i, 64));
+        }
+        string output = "";
+        KeyGenerator kg(key);
+        kg.generateRoundKeys();
+        vector<string> roundKeys = reversed_keys(kg.getRoundKeys());
+        for (const string& b : blocks) {
+            DES des(roundKeys);
+            output += des.encrypt(b);
+        }
+        cout << output << '\n';
+        return 0;
+
+    } else if (mode == 3) {
+        // TripleDES encrypt: read plaintext (64-bit) and K1,K2,K3 (each 64-bit)
+        string plaintext, k1, k2, k3;
+        if (!(cin >> plaintext)) return 0;
+        if (!(cin >> k1)) return 0;
+        if (!(cin >> k2)) return 0;
+        if (!(cin >> k3)) return 0;
+        if (!is_binary_string(plaintext) || plaintext.size() != 64) return 0;
+        if (!is_binary_string(k1) || k1.size() != 64) return 0;
+        if (!is_binary_string(k2) || k2.size() != 64) return 0;
+        if (!is_binary_string(k3) || k3.size() != 64) return 0;
+
+        // E(K1, P)
+        KeyGenerator g1(k1); g1.generateRoundKeys(); DES d1(g1.getRoundKeys());
+        string t1 = d1.encrypt(plaintext);
+
+        // D(K2, t1)
+        KeyGenerator g2(k2); g2.generateRoundKeys(); DES d2(reversed_keys(g2.getRoundKeys()));
+        string t2 = d2.encrypt(t1);
+
+        // E(K3, t2)
+        KeyGenerator g3(k3); g3.generateRoundKeys(); DES d3(g3.getRoundKeys());
+        string out = d3.encrypt(t2);
+        cout << out << '\n';
+        return 0;
+
+    } else if (mode == 4) {
+        // TripleDES decrypt: read ciphertext (64-bit) and K1,K2,K3 (each 64-bit)
+        string ciphertext, k1, k2, k3;
+        if (!(cin >> ciphertext)) return 0;
+        if (!(cin >> k1)) return 0;
+        if (!(cin >> k2)) return 0;
+        if (!(cin >> k3)) return 0;
+        if (!is_binary_string(ciphertext) || ciphertext.size() != 64) return 0;
+        if (!is_binary_string(k1) || k1.size() != 64) return 0;
+        if (!is_binary_string(k2) || k2.size() != 64) return 0;
+        if (!is_binary_string(k3) || k3.size() != 64) return 0;
+
+        // D(K3, C)
+        KeyGenerator g3(k3); g3.generateRoundKeys(); DES d3(reversed_keys(g3.getRoundKeys()));
+        string t1 = d3.encrypt(ciphertext);
+
+        // E(K2, t1)
+        KeyGenerator g2(k2); g2.generateRoundKeys(); DES d2(g2.getRoundKeys());
+        string t2 = d2.encrypt(t1);
+
+        // D(K1, t2)
+        KeyGenerator g1(k1); g1.generateRoundKeys(); DES d1(reversed_keys(g1.getRoundKeys()));
+        string out = d1.encrypt(t2);
+        cout << out << '\n';
+        return 0;
+
+    }
+
     return 0;
 }
 
     
-
-
-
-
-
-
