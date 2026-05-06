@@ -57,33 +57,55 @@ cmake --build build
 
 ## 3. Input / Đầu vào
 
-TODO_STUDENT: Mô tả rõ đầu vào của chương trình sau khi em hoàn thiện bài lab.
+Chương trình nhận dữ liệu từ stdin theo hợp đồng sau (một số mode cho phép nhiều block):
 
-Gợi ý nên nêu:
-- plaintext đang được nhập như thế nào
-- key đang được nhập như thế nào
-- chương trình nhận 1 block hay nhiều block
-- định dạng dữ liệu là chuỗi bit, chuỗi ký tự hay file
+- Dòng đầu: một số nguyên mode (1..4)
+  - 1 = DES encrypt
+  - 2 = DES decrypt
+  - 3 = TripleDES encrypt
+  - 4 = TripleDES decrypt
+
+- Mode 1 (DES encrypt): nhập lần lượt
+  1. plaintext dưới dạng chuỗi nhị phân (có thể dài hơn 64 bit)
+  2. key 64-bit (chuỗi nhị phân độ dài 64)
+  Hệ thống tự chia plaintext thành block 64 bit; block cuối nếu thiếu được pad bằng zero.
+
+- Mode 2 (DES decrypt): nhập lần lượt
+  1. ciphertext dưới dạng chuỗi nhị phân (một hoặc nhiều block 64-bit)
+  2. key 64-bit
+
+- Mode 3 (TripleDES encrypt): nhập lần lượt
+  1. plaintext 64-bit
+  2. K1 (64-bit)
+  3. K2 (64-bit)
+  4. K3 (64-bit)
+
+- Mode 4 (TripleDES decrypt): nhập lần lượt
+  1. ciphertext 64-bit
+  2. K1 (64-bit)
+  3. K2 (64-bit)
+  4. K3 (64-bit)
+
+Tất cả dữ liệu đầu vào phải là chuỗi nhị phân ('0'/'1'). Các key yêu cầu chính xác 64 bit.
 
 ## 4. Output / Đầu ra
 
-TODO_STUDENT: Mô tả rõ đầu ra của chương trình.
+Chương trình in ra kết quả cuối cùng dưới dạng một chuỗi nhị phân hợp lệ trên một dòng duy nhất.
 
-Gợi ý nên nêu:
-- ciphertext hiển thị ra sao
-- có in round keys hay không
-- có hỗ trợ giải mã hay không
-- với TripleDES thì đầu ra gồm những gì
+- Mode 1: in ciphertext (chuỗi nhị phân) là kết quả mã hóa tất cả block theo thứ tự (concatenate các block ciphertext).
+- Mode 2: in plaintext (chuỗi nhị phân) là kết quả giải mã tất cả block (lưu ý zero-padding không được loại bỏ tự động).
+- Mode 3 / 4: in một block 64-bit kết quả của TripleDES (ciphertext hoặc plaintext tùy mode).
+
+Lưu ý: chương trình không in các round keys hay thông tin debug khác để đảm bảo kết quả cuối cùng có thể tách ra chính xác cho CI.
 
 ## 5. Padding đang dùng
 
-TODO_STUDENT: Giải thích cơ chế padding em dùng.
+Áp dụng zero-padding cho block cuối cùng:
 
-Gợi ý:
-- nếu plaintext dài hơn 64 bit thì chia block như thế nào
-- nếu thiếu bit thì pad bằng `0` ra sao
-- hạn chế của zero padding là gì
-- vì sao cách này chỉ phù hợp cho bài học nhập môn, không phải thiết kế an toàn hoàn chỉnh trong thực tế
+- Nếu plaintext dài hơn 64 bit: chia tuần tự thành các block 64 bit và mã hóa từng block.
+- Nếu block cuối thiếu bit thì pad thêm các ký tự '0' ở bên phải cho đủ 64 bit.
+
+Hạn chế: zero-padding không cho biết rõ số bit/byte đã pad nếu plaintext có thể kết thúc bằng một hoặc nhiều ký tự '0', nên không phù hợp cho dữ liệu thực tế. Cách này chỉ để minh họa hoạt động multi-block trong bài học.
 
 ## 6. Tests bắt buộc
 
@@ -123,7 +145,7 @@ Trước khi nộp, cần có:
 - `tests/` với ít nhất 5 test
 - có negative test cho `tamper` và `wrong key`
 - `logs/` có ít nhất 1 file minh chứng thật
-- không còn dòng `TODO_STUDENT`
+ - không còn placeholder còn sót lại
 
 ## 10. Lưu ý về CI
 
@@ -132,7 +154,7 @@ CI sẽ **không chỉ kiểm tra file có tồn tại** mà còn kiểm tra:
 - các mục bắt buộc trong report
 - sự hiện diện của negative tests
 - có minh chứng trong `logs/`
-- repo **không còn placeholder `TODO_STUDENT`**
+ - repo **không còn placeholder còn sót lại**
 
 Vì vậy repo starter này sẽ **chưa pass CI** cho tới khi sinh viên hoàn thiện nội dung.
 
@@ -157,9 +179,9 @@ Nhập lần lượt:
 3. key 64-bit
 
 Yêu cầu:
-- nếu plaintext dài hơn 64 bit: chia block 64 bit và mã hóa tuần tự
-- nếu block cuối thiếu bit: zero padding
-- in ra **ciphertext cuối cùng** dưới dạng chuỗi nhị phân
+- nếu plaintext dài hơn 64 bit: chia block 64 bit và mã hóa tuần tự.
+- nếu block cuối thiếu bit: zero padding.
+- in ra **ciphertext cuối cùng** dưới dạng chuỗi nhị phân.
 
 ### Mode 2: DES decrypt
 Nhập lần lượt:
